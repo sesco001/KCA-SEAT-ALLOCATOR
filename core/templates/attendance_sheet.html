@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Attendance Sheet - {{ exam.course.code }}</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid black; padding: 10px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .print-btn { 
+            background: #003366; color: white; padding: 10px 20px; 
+            border: none; cursor: pointer; font-size: 16px; margin-bottom: 20px;
+        }
+
+        /* This logic runs only when you press Print */
+        @media print {
+            .print-btn { display: none; } /* Hide the button */
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="print-btn" onclick="window.print()">🖨️ Print Attendance List</button>
+
+    <div class="header">
+        <h2>KCA UNIVERSITY EXAMINATION</h2>
+        <h3>Attendance & Seating Roll</h3>
+        <p><strong>Course:</strong> {{ exam.course.code }} - {{ exam.course.title }}</p>
+        <p><strong>Date:</strong> {{ exam.date_time }} | <strong>Duration:</strong> {{ exam.duration_minutes }} mins</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Room</th>
+                <th>Seat No.</th>
+                <th>Reg Number</th>
+                <th>Student Name</th>
+                <th>Student Signature</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for seat in assignments %}
+            <tr>
+                <td>{{ seat.room.name }}</td>
+                <td><strong>{{ seat.seat_number }}</strong></td>
+                <td>{{ seat.student.registration_number }}</td>
+                <td>{{ seat.student.first_name }} {{ seat.student.last_name }}</td>
+                <td></td> </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>

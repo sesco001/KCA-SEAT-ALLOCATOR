@@ -1,0 +1,13 @@
+{% extends 'admin/change_list.html' %}
+
+{% block object-tools %}
+    <div>
+        <form action="import-csv/" method="POST" style="display: inline;">
+            {% csrf_token %}
+            <a href="import-csv/" class="addlink" style="background: #28a745; color: white;">
+                📂 Import Students from CSV
+            </a>
+        </form>
+        {{ block.super }}
+    </div>
+{% endblock %}

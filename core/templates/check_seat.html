@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>KCA Exam Seat Checker</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; }
+        input { padding: 10px; width: 300px; font-size: 16px; }
+        button { padding: 10px 20px; font-size: 16px; background: #003366; color: white; border: none; cursor: pointer; }
+        .card { border: 1px solid #ddd; padding: 20px; margin-top: 20px; display: inline-block; background: #f9f9f9; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>KCA University Exam Portal</h1>
+    <h3>Check Your Seat Allocation</h3>
+    
+    <form method="GET">
+        <input type="text" name="reg_number" placeholder="Enter Registration Number (e.g., KCA/001)" required>
+        <button type="submit">Search</button>
+    </form>
+
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+
+    {% if assignment %}
+        <div class="card">
+            <h2>Seat Found!</h2>
+            <p><strong>Name:</strong> {{ assignment.student.first_name }} {{ assignment.student.last_name }}</p>
+            <p><strong>Exam:</strong> {{ assignment.exam.course.code }}</p>
+            <p><strong>Room:</strong> {{ assignment.room.name }}</p>
+            <h1 style="color: #003366;">Seat {{ assignment.seat_number }}</h1>
+        </div>
+    {% endif %}
+</body>
+</html>

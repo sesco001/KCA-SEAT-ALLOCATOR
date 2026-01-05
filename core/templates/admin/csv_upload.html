@@ -1,0 +1,15 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div>
+        <h2>Upload Student CSV</h2>
+        <p>Please select a CSV file with columns: <strong>reg_no, first, last, email, special_needs</strong></p>
+        <br>
+        {{ form.as_p }}
+        <br>
+        <input type="submit" value="Import Students" style="background: #003366; color: white; padding: 10px 20px; border: none; cursor: pointer;">
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,6 @@
+reg_no,first,last,email,special_needs
+KCA/050,Alice,Wanjiku,alice@kca.ac.ke,False
+KCA/051,Brian,Otieno,brian@kca.ac.ke,True
+KCA/052,Charity,Mwangi,charity@kca.ac.ke,False
+KCA/053,David,Kamau,david@kca.ac.ke,True
+KCA/054,Esther,Njoroge,esther@kca.ac.ke,False
