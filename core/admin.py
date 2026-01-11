@@ -6,13 +6,26 @@ from django.contrib import admin
 from django import forms
 from django.contrib import messages
 from django.http import HttpResponse
+from django.core.management import call_command # <--- Required for the Allocation Button
+from django.contrib.auth.models import User
+from django.contrib.auth.admin import UserAdmin
 from .models import Student, Room, Course, Exam, SeatAssignment
 
-# --- 1. THE IMPORT FORM ---
-class CsvImportForm(forms.Form):
-    csv_file = forms.FileField()
+# --- 1. THE ALLOCATION ACTION (The "Magic Button") ---
+@admin.action(description='⚡ Allocate Seats for Selected Exams')
+def run_allocation(modeladmin, request, queryset):
+    success_count = 0
+    for exam in queryset:
+        try:
+            call_command('allocate', exam.id)
+            success_count += 1
+        except Exception as e:
+            modeladmin.message_user(request, f"Error for {exam}: {str(e)}", messages.ERROR)
 
-# --- 2. THE EXPORT FUNCTION (Keep your existing one) ---
+    if success_count > 0:
+        modeladmin.message_user(request, f"Successfully allocated seats for {success_count} exams!", messages.SUCCESS)
+
+# --- 2. THE EXPORT FUNCTION ---
 def export_to_csv(modeladmin, request, queryset):
     meta = modeladmin.model._meta
     filename = f"{meta.verbose_name_plural}_export.csv"
@@ -31,7 +44,11 @@ def export_to_csv(modeladmin, request, queryset):
     return response
 export_to_csv.short_description = "📂 Export Selected to CSV"
 
-# --- 3. THE ADVANCED STUDENT ADMIN ---
+# --- 3. THE IMPORT FORM ---
+class CsvImportForm(forms.Form):
+    csv_file = forms.FileField()
+
+# --- 4. STUDENT ADMIN (Import + Export) ---
 @admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
     list_display = ('registration_number', 'first_name', 'last_name', 'has_special_needs')
@@ -79,36 +96,38 @@ class StudentAdmin(admin.ModelAdmin):
         payload = {"form": form}
         return render(request, "admin/csv_upload.html", payload)
 
+# --- 5. EXAM ADMIN (Allocation + Export) ---
+@admin.register(Exam)
+class ExamAdmin(admin.ModelAdmin):
+    list_display = ('course', 'date_time', 'duration_minutes')
+    # MERGED ACTIONS: Now you can Allocat AND Export
+    actions = [run_allocation, export_to_csv] 
 
-# --- 4. OTHER ADMINS ---
+# --- 6. OTHER ADMINS ---
 @admin.register(Room)
 class RoomAdmin(admin.ModelAdmin):
     list_display = ('name', 'capacity', 'is_accessible', 'capacity_status')
     actions = [export_to_csv]
     def capacity_status(self, obj): return f"{obj.capacity} Seats Max"
 
-@admin.register(Exam)
-class ExamAdmin(admin.ModelAdmin):
-    list_display = ('course', 'date_time', 'duration_minutes')
-    actions = [export_to_csv]
-
 @admin.register(SeatAssignment)
 class SeatAssignmentAdmin(admin.ModelAdmin):
     list_display = ('student', 'exam', 'room', 'seat_number')
     list_filter = ('exam', 'room')
     actions = [export_to_csv]
+    search_fields = ('student__registration_number',)
 
 admin.site.register(Course)
-# --- 5. THE STAFF/ADMIN IMPORTER (New Section) ---
-from django.contrib.auth.models import User
-from django.contrib.auth.admin import UserAdmin
 
+# --- 7. STAFF/USER IMPORTER ---
 # Unregister the default User admin so we can use our own
-admin.site.unregister(User)
+try:
+    admin.site.unregister(User)
+except admin.sites.NotRegistered:
+    pass
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    # Use our custom template with the Purple Button
     change_list_template = "admin/user_changelist.html"
 
     def get_urls(self):
@@ -127,9 +146,7 @@ class CustomUserAdmin(UserAdmin):
             
             count = 0
             for row in reader:
-                # Check if user already exists
                 if not User.objects.filter(username=row['username']).exists():
-                    # Create the user safely (Hashes the password)
                     user = User.objects.create_user(
                         username=row['username'],
                         email=row['email'],
@@ -138,8 +155,7 @@ class CustomUserAdmin(UserAdmin):
                         last_name=row['last']
                     )
                     
-                    # Set permissions
-                    user.is_staff = True # All imported users can log in
+                    user.is_staff = True 
                     if row['is_superuser'] == 'True':
                         user.is_superuser = True
                     
@@ -149,7 +165,6 @@ class CustomUserAdmin(UserAdmin):
             self.message_user(request, f"Successfully imported {count} staff members!")
             return redirect("..")
         
-        # Reuse the same upload form we made for Students
         form = CsvImportForm()
         payload = {"form": form}
         return render(request, "admin/csv_upload.html", payload)

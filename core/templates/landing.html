@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KCA University | Exam Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .hero-bg {
+            background-image: linear-gradient(rgba(0, 51, 102, 0.9), rgba(0, 51, 102, 0.8)), url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased text-gray-900 bg-gray-100">
+
+    <nav class="bg-white shadow-md fixed w-full z-10 top-0">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex-shrink-0 flex items-center">
+                    <span class="font-bold text-2xl text-[#003366] tracking-wider">KCA UNIVERSITY</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="{% url 'check_seat' %}" class="text-gray-700 hover:text-[#003366] font-medium">Find My Seat</a>
+                    <a href="{% url 'student_login' %}" class="text-gray-700 hover:text-[#003366] font-medium">Student Portal</a>
+                    <a href="/admin/" class="text-gray-500 hover:text-red-600 font-medium">Staff Login</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="hero-bg h-screen flex items-center justify-center text-center px-4">
+        <div class="max-w-3xl space-y-6">
+            <h1 class="text-4xl md:text-6xl font-extrabold text-white tracking-tight">
+                Exam Intelligence <br> <span class="text-yellow-400">Simplified.</span>
+            </h1>
+            <p class="text-lg md:text-xl text-gray-200">
+                The centralized platform for exam allocation, course registration, and seat management. 
+                Fast, seamless, and automated.
+            </p>
+            
+            <div class="flex flex-col md:flex-row justify-center gap-4 mt-8">
+                <a href="{% url 'check_seat' %}" class="px-8 py-4 bg-yellow-500 text-[#003366] font-bold rounded-lg shadow-lg hover:bg-yellow-400 transform hover:scale-105 transition">
+                    🔍 Find Exam Seat
+                </a>
+                <a href="{% url 'student_login' %}" class="px-8 py-4 bg-transparent border-2 border-white text-white font-bold rounded-lg hover:bg-white hover:text-[#003366] transition">
+                    👤 Student Portal Login
+                </a>
+            </div>
+            <p class="text-gray-400 text-sm mt-4">Default Student Password: <strong>12345</strong></p>
+        </div>
+    </div>
+
+    <div class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            <div class="p-6">
+                <div class="text-4xl mb-4">📅</div>
+                <h3 class="text-xl font-bold text-gray-800">Smart Scheduling</h3>
+                <p class="text-gray-600 mt-2">Automated seat allocation ensuring zero clashes and optimized room usage.</p>
+            </div>
+            <div class="p-6">
+                <div class="text-4xl mb-4">🎟️</div>
+                <h3 class="text-xl font-bold text-gray-800">Instant Access</h3>
+                <p class="text-gray-600 mt-2">Get your exam pass with a unique QR code instantly.</p>
+            </div>
+            <div class="p-6">
+                <div class="text-4xl mb-4">♿</div>
+                <h3 class="text-xl font-bold text-gray-800">Inclusive Design</h3>
+                <p class="text-gray-600 mt-2">Priority allocation for students with special needs.</p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-[#003366] text-white py-6 text-center">
+        <p>&copy; 2026 KCA University. Powered by Django.</p>
+    </footer>
+
+</body>
+</html>

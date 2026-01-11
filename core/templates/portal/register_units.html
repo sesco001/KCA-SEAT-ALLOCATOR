@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head><title>Register Units</title><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow">
+        <h1 class="text-3xl font-bold text-blue-900">Unit Registration</h1>
+        <p class="text-gray-600 mb-6">Welcome, {{ student.first_name }}. Select your units for this semester.</p>
+        
+        <form method="POST">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for course in all_courses %}
+                <label class="flex items-center p-4 border rounded hover:bg-blue-50 cursor-pointer">
+                    <input type="checkbox" name="courses" value="{{ course.id }}" class="w-5 h-5 text-blue-900"
+                        {% if course in student.enrolled_courses.all %}checked{% endif %}>
+                    <div class="ml-3">
+                        <span class="block font-bold text-gray-800">{{ course.code }}</span>
+                        <span class="block text-sm text-gray-500">{{ course.name }}</span>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+            <button class="mt-8 bg-green-600 text-white font-bold py-3 px-8 rounded shadow hover:bg-green-700">
+                💾 Confirm Registration
+            </button>
+        </form>
+    </div>
+</body>
+</html>

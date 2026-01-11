@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Exam Entry Permit - {{ assignment.student.registration_number }}</title>
+    <style>
+        body { font-family: 'Courier New', Courier, monospace; background: #eee; padding: 40px; }
+        
+        .ticket {
+            max-width: 700px;
+            margin: auto; 
+            background: white;
+            border: 2px solid #003366; 
+            display: flex;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        
+        /* The Blue Left Side */
+        .stub {
+            background: #003366; 
+            color: white; 
+            padding: 20px; 
+            width: 250px;
+            text-align: center; 
+            border-right: 2px dashed white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* The White Right Side */
+        .main { padding: 20px; flex-grow: 1; position: relative; }
+        
+        h1 { margin: 0; font-size: 20px; color: #003366; text-transform: uppercase; margin-bottom: 5px; }
+        
+        .info { margin-top: 15px; font-size: 14px; line-height: 1.6; color: #333; }
+        
+        .big-seat { 
+            position: absolute; 
+            right: 20px; 
+            top: 10px; 
+            font-size: 60px; 
+            font-weight: bold; 
+            color: #e0e0e0; 
+            z-index: 0;
+        }
+        
+        .watermark { position: absolute; bottom: 10px; right: 20px; font-size: 10px; color: #999; }
+        
+        /* Print Button Style */
+        .btn-print {
+            background: #003366; color: white; border: none;
+            padding: 12px 24px; font-size: 16px; cursor: pointer;
+            border-radius: 5px; margin-bottom: 20px;
+        }
+        .btn-print:hover { background: #002244; }
+        
+        /* Hide button when printing */
+        @media print {
+            body { background: white; padding: 0; }
+            .btn-print { display: none; }
+            .ticket { box-shadow: none; border: 2px solid black; }
+        }
+    </style>
+</head>
+<body>
+
+<center>
+    <button onclick="window.print()" class="btn-print">🖨️ Print Exam Slip</button>
+</center>
+
+<div class="ticket">
+    <div class="stub">
+        <h3>KCA UNIV</h3>
+        <p style="margin-top: -10px; font-size: 12px;">EXAM PERMIT</p>
+        
+        {% if qr_image %}
+            <img src="data:image/png;base64,{{ qr_image }}" width="140" style="background:white; padding: 5px; display:block; margin: 0 auto;">
+        {% else %}
+            <div style="width:140px; height:140px; background:#ddd; color:red; display:flex; align-items:center; justify-content:center; border:1px solid red;">
+                NO QR DATA
+            </div>
+        {% endif %}
+        
+        <br>
+        <small style="opacity: 0.8;">Scan to Verify</small>
+    </div>
+    
+    <div class="main">
+        <div class="big-seat">{{ assignment.seat_number }}</div>
+        
+        <div style="position: relative; z-index: 1;">
+            <h1>{{ assignment.student.first_name }} {{ assignment.student.last_name }}</h1>
+            <hr style="border: 0; border-top: 1px solid #ccc;">
+            
+            <div class="info">
+                <strong>REG NO:</strong> {{ assignment.student.registration_number }} <br>
+                <strong>COURSE:</strong> {{ assignment.exam.course.name }} <br> 
+                <strong>DATE:</strong> {{ assignment.exam.date_time|date:"D, d M Y" }} <br>
+                <strong>TIME:</strong> {{ assignment.exam.date_time|time:"H:i" }} <br>
+                <br>
+                <strong>VENUE:</strong> <span style="font-size: 18px; color: #cc0000; font-weight: bold;">{{ assignment.room.name }}</span> <br>
+                <strong>SEAT:</strong> <span style="font-size: 18px; color: #cc0000; font-weight: bold;">{{ assignment.seat_number }}</span>
+            </div>
+        </div>
+        
+        <div class="watermark">OFFICIAL EXAMINATION DOCUMENT • SYSTEM GENERATED</div>
+    </div>
+</div>
+
+</body>
+</html>

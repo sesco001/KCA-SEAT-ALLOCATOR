@@ -13,23 +13,29 @@ class Command(BaseCommand):
         try:
             exam = Exam.objects.get(id=exam_id)
         except Exam.DoesNotExist:
-            self.stdout.write(self.style.ERROR('Exam not found!'))
+            self.stdout.write(self.style.ERROR(f'Exam ID {exam_id} not found!'))
             return
 
         self.stdout.write(f"Starting allocation for: {exam}...")
 
-        # 1. Clear old assignments for this specific exam (so we can re-run safely)
+        # 1. Clear old assignments for this specific exam
         SeatAssignment.objects.filter(exam=exam).delete()
 
-        # 2. Get all students registered for this exam
-        # We separate them into two groups to handle priority
-        all_students = exam.registered_students.all()
+        # 2. GET STUDENTS (FIXED HERE)
+        # We now get students via the Course they enrolled in.
+        # "exam.registered_students" is deleted, so we use "exam.course.students"
+        all_students = exam.course.students.all()
+        
+        if not all_students.exists():
+             self.stdout.write(self.style.WARNING(f"No students found! Did they register for {exam.course.name} in the portal?"))
+             return
+
+        # Separate priorities
         special_needs_students = all_students.filter(has_special_needs=True)
         regular_students = all_students.filter(has_special_needs=False)
 
-        # 3. Get all rooms
-        # We sort rooms so accessible ones come first (Priority for special needs)
-        all_rooms = Room.objects.all().order_by('-is_accessible') 
+        # 3. Get all rooms (Accessible first)
+        all_rooms = Room.objects.all().order_by('-is_accessible', '-capacity') 
 
         # 4. The Allocation Loop
         student_queue = list(special_needs_students) + list(regular_students)
@@ -38,29 +44,30 @@ class Command(BaseCommand):
         current_room = next(rooms_iter, None)
         seats_filled_in_room = 0
 
+        # Track success count for report
+        assigned_count = 0
+
         for student in student_queue:
             
-            # --- START COMPLEX IMPLEMENTATION: ANTI-CLASH CHECK ---
-            # Check if this student is already seated in ANY other exam at this EXACT time
+            # --- ANTI-CLASH CHECK ---
+            # Check if student is busy at this EXACT time in another exam
             conflict = SeatAssignment.objects.filter(
                 student=student,
-                exam__date_time=exam.date_time  # Clashes if times match
-            ).exclude(exam=exam).exists() # Exclude the current exam we are processing
+                exam__date_time=exam.date_time
+            ).exclude(exam=exam).exists()
 
             if conflict:
-                self.stdout.write(self.style.ERROR(f"CRITICAL CONFLICT: {student} has another exam at {exam.date_time}! Skipping seat assignment."))
-                continue # Skip this student and move to the next one
-            # --- END COMPLEX IMPLEMENTATION ---
+                self.stdout.write(self.style.ERROR(f"CRITICAL CONFLICT: {student} has another exam at {exam.date_time}! Skipping."))
+                continue 
 
-            # Standard Room Check
+            # Room Availability Check
             if not current_room:
-                self.stdout.write(self.style.ERROR('CRITICAL: Run out of rooms! Some students not seated.'))
+                self.stdout.write(self.style.ERROR('CRITICAL: Run out of rooms! Remaining students not seated.'))
                 break
 
-            # Special Logic: If student has needs, ensure room is accessible
+            # Accessibility Warning
             if student.has_special_needs and not current_room.is_accessible:
-                # In a real scenario, this would trigger a search for the next accessible room
-                self.stdout.write(self.style.WARNING(f"Warning: Could not find accessible room for {student}"))
+                self.stdout.write(self.style.WARNING(f"Warning: Accessible room needed for {student}, but placed in {current_room}"))
 
             # Assign the seat
             seat_number = str(seats_filled_in_room + 1)
@@ -71,13 +78,14 @@ class Command(BaseCommand):
                 seat_number=seat_number
             )
             
-            self.stdout.write(f"Assigned {student} to {current_room} Seat {seat_number}")
+            assigned_count += 1
+            # self.stdout.write(f"Assigned {student} to {current_room} Seat {seat_number}")
 
-            # Check capacity
+            # Handle Room Capacity
             seats_filled_in_room += 1
             if seats_filled_in_room >= current_room.capacity:
                 self.stdout.write(self.style.SUCCESS(f"Room {current_room} is full."))
                 current_room = next(rooms_iter, None)
                 seats_filled_in_room = 0
 
-        self.stdout.write(self.style.SUCCESS('Allocation Complete!'))
+        self.stdout.write(self.style.SUCCESS(f'Allocation Complete! {assigned_count} students assigned.'))
