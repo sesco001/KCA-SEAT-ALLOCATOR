@@ -1,4 +1,4 @@
-import os  # <--- FIXED: Added this so os.environ works
+import os
 import dj_database_url
 from pathlib import Path
 
@@ -9,27 +9,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-me-locally')
 
 # --- DEBUG SETTINGS ---
-# Change this to False for production if you want standard error pages
 DEBUG = 'RENDER' not in os.environ
 
 ALLOWED_HOSTS = ['*']
 
 # --- APPLICATION DEFINITION ---
 INSTALLED_APPS = [
-    'jazzmin',  # <--- NEW: Must be at the very top for the theme to work!
+    'jazzmin',  # Must be at the top
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'core',  # Your app
+    'core',
 ]
 
 # --- MIDDLEWARE ---
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', # <--- Crucial for Heroku
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Crucial for Heroku
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -63,36 +62,36 @@ DATABASES = {
     'default': dj_database_url.config(
         default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
         conn_max_age=600,
-        ssl_require=False # Set to False for local dev, True for Heroku if needed
+        ssl_require=False
     )
 }
 
 # --- PASSWORD VALIDATION ---
 AUTH_PASSWORD_VALIDATORS = [
-    { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
-    { 'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
-    { 'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator', },
-    { 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
 # --- INTERNATIONALIZATION ---
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'Africa/Nairobi' # Set to your local time
+TIME_ZONE = 'Africa/Nairobi'
 USE_I18N = True
 USE_TZ = True
 
 # --- STATIC FILES (CSS, JavaScript, Images) ---
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# --- FIX FOR DEPLOYMENT ERROR ---
-# This tells Whitenoise: "If a map file is missing, don't crash the deployment."
-WHITENOISE_MANIFEST_STRICT = False 
+# --- THE FIX IS HERE ---
+# We switched to 'CompressedStaticFilesStorage'. 
+# This version DOES NOT panic if a file is missing.
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- JAZZMIN SETTINGS (Professional Dashboard) ---
+# --- JAZZMIN SETTINGS ---
 JAZZMIN_SETTINGS = {
     "site_title": "KCA Exam Admin",
     "site_header": "KCA University",
@@ -101,7 +100,7 @@ JAZZMIN_SETTINGS = {
     "copyright": "KCA University",
     "search_model": "core.Student",
     "topmenu_links": [
-        {"name": "Home",  "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
         {"name": "View Student Portal", "url": "/"},
     ],
     "show_ui_builder": False,
