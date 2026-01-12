@@ -9,6 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-me-locally')
 
 # --- DEBUG SETTINGS ---
+# Change this to False for production if you want standard error pages
 DEBUG = 'RENDER' not in os.environ
 
 ALLOWED_HOSTS = ['*']
@@ -84,6 +85,10 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# --- FIX FOR DEPLOYMENT ERROR ---
+# This tells Whitenoise: "If a map file is missing, don't crash the deployment."
+WHITENOISE_MANIFEST_STRICT = False 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
