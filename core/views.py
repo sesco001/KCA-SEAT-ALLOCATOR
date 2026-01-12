@@ -4,7 +4,7 @@ import base64
 import qrcode
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth.models import User  # <--- Added for creating users
+from django.contrib.auth.models import User
 from django.contrib import messages
 from .models import Exam, SeatAssignment, Student, Course
 
@@ -12,40 +12,38 @@ from .models import Exam, SeatAssignment, Student, Course
 def is_staff(user):
     return user.is_staff
 
-# --- 3. PUBLIC VIEWS (Landing, Search & Tickets) ---
+# --- 3. PUBLIC VIEWS ---
 
 def landing_page(request):
-    """The Main Homepage with links to Portal and Check Seat."""
     return render(request, 'landing.html')
 
 def check_seat(request):
-    """Search for seat by Reg Number."""
     query = request.GET.get('reg_number')
     assignment = None
     error = None
-
     if query:
-        # Filter assignments by the student reg number
-        # We use .first() to get the first exam found (simplistic search)
+        # We just check if they exist in ANY seat to validate them
         assignment = SeatAssignment.objects.filter(student__registration_number=query).first()
-        
         if not assignment:
             error = f"No seat found for {query}. Have you registered for units?"
-
     return render(request, 'check_seat.html', {'assignment': assignment, 'error': error})
 
-
+# --- UPDATED: GENERATES THE MASTER DOCKET (ALL UNITS) ---
 def student_exam_slip(request, reg_number):
-    """Generates the QR Code Ticket."""
-    assignment = SeatAssignment.objects.filter(student__registration_number=reg_number).first()
+    """Generates a Master Docket with ALL Units."""
     
-    if not assignment:
-        return render(request, 'check_seat.html', {'error': "No exams found for this student."})
+    # 1. Get ALL assignments for this student (ordered by date)
+    assignments = SeatAssignment.objects.filter(student__registration_number=reg_number).order_by('exam__date_time')
+    
+    # 2. Get the student details (Check if student exists even if no exams yet)
+    student = Student.objects.filter(registration_number=reg_number).first()
 
-    # Generate QR Data
-    qr_data = f"ID: {assignment.student.registration_number} | Seat: {assignment.seat_number} | Room: {assignment.room.name}"
+    if not student:
+         return render(request, 'check_seat.html', {'error': "Student not found!"})
+
+    # 3. Generate ONE Master QR Code (Student Identity)
+    qr_data = f"Student: {student.registration_number} | {student.first_name} {student.last_name}"
     
-    # Create Image
     qr = qrcode.QRCode(version=1, box_size=10, border=5)
     qr.add_data(qr_data)
     qr.make(fit=True)
@@ -56,68 +54,76 @@ def student_exam_slip(request, reg_number):
     qr_image_base64 = base64.b64encode(buffer.getvalue()).decode()
 
     return render(request, 'student_exam_slip.html', {
-        'student': assignment.student,
-        'assignment': assignment, 
+        'student': student,
+        'assignments': assignments,  # This sends the LIST of exams to the table
         'qr_image': qr_image_base64
     })
 
-# --- 4. STUDENT PORTAL (Signup, Login & Registration) ---
+# --- 4. STUDENT PORTAL (The Fixed Flow) ---
 
 def student_signup(request):
-    """Allows new students to register themselves."""
+    """Signup -> Auto Login -> Go to Unit Registration"""
     if request.method == 'POST':
         reg_number = request.POST.get('reg_number').strip().upper()
         first_name = request.POST.get('first_name')
         last_name = request.POST.get('last_name')
-        course_name = request.POST.get('course')
+        # We ignore 'course' here because the Student model doesn't store the degree name
         password = request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
 
-        # 1. Password Match Check
         if password != confirm_password:
             messages.error(request, "Passwords do not match!")
             return render(request, 'portal/signup.html')
 
-        # 2. Duplicate Check
         if Student.objects.filter(registration_number=reg_number).exists():
-            messages.error(request, "Student with this Reg Number already exists!")
+            messages.error(request, "Student already exists!")
             return render(request, 'portal/signup.html')
 
         try:
-            # 3. Create Django User (Optional, but good for Admin integration)
+            # 1. Create Django User (Optional, used for Admin)
             if not User.objects.filter(username=reg_number).exists():
-                User.objects.create_user(username=reg_number, password=password, first_name=first_name, last_name=last_name)
+                User.objects.create_user(
+                    username=reg_number, 
+                    password=password, 
+                    first_name=first_name, 
+                    last_name=last_name
+                )
 
-            # 4. Create the Student Profile (This enables login)
-            Student.objects.create(
+            # 2. Create Student (MATCHING YOUR MODELS.PY)
+            # We generate a fake email because your model requires one.
+            student_email = f"{reg_number.replace('/', '')}@student.kca.ac.ke".lower()
+            
+            student = Student.objects.create(
                 registration_number=reg_number,
-                name=f"{first_name} {last_name}",
-                course_name=course_name,
-                password=password # Saving here so student_login works
+                first_name=first_name,  # Correct field
+                last_name=last_name,    # Correct field
+                email=student_email,    # Correct field
+                password=password
             )
 
-            messages.success(request, "Account created successfully! Please Login.")
-            return redirect('student_login')
+            # --- AUTO LOGIN HERE ---
+            request.session['student_id'] = student.id
+            messages.success(request, "Account created! Select your units now.")
+            return redirect('unit_registration') # Go pick units
 
         except Exception as e:
-            messages.error(request, f"Error creating account: {e}")
+            messages.error(request, f"Error: {e}")
             return render(request, 'portal/signup.html')
 
     return render(request, 'portal/signup.html')
 
 
 def student_login(request):
-    """The Gate: Simple login for students."""
+    """Login -> Go straight to Dashboard"""
     if request.method == 'POST':
         reg_no = request.POST.get('reg_number')
         password = request.POST.get('password')
         
         try:
             student = Student.objects.get(registration_number=reg_no)
-            # Verify password (matches what was saved in signup)
             if student.password == password:
-                request.session['student_id'] = student.id # Save ID in session
-                return redirect('unit_registration')
+                request.session['student_id'] = student.id
+                return redirect('student_dashboard') # Go to Dashboard
             else:
                 messages.error(request, "Incorrect password.")
         except Student.DoesNotExist:
@@ -126,25 +132,29 @@ def student_login(request):
     return render(request, 'portal/login.html')
 
 
-def unit_registration(request):
-    """The Form: Students tick the units they are doing."""
-    # 1. Protect the view (Must be logged in)
+def student_dashboard(request):
+    """The Main Dashboard: Shows Enrolled Units"""
     student_id = request.session.get('student_id')
-    if not student_id:
-        return redirect('student_login')
+    if not student_id: return redirect('student_login')
+    
+    student = Student.objects.get(id=student_id)
+    return render(request, 'portal/dashboard.html', {'student': student})
+
+
+def unit_registration(request):
+    """Select Units -> Save -> Go to Dashboard"""
+    student_id = request.session.get('student_id')
+    if not student_id: return redirect('student_login')
     
     student = Student.objects.get(id=student_id)
     all_courses = Course.objects.all()
     
     if request.method == 'POST':
-        # 2. Get checked boxes
         selected_ids = request.POST.getlist('courses')
-        
-        # 3. Update the ManyToMany field (The Automation!)
         student.enrolled_courses.set(selected_ids)
         student.save()
-        
-        return render(request, 'portal/dashboard.html', {'student': student, 'success': True})
+        messages.success(request, "Units updated successfully!")
+        return redirect('student_dashboard') # Done, go to dashboard
 
     return render(request, 'portal/register_units.html', {
         'student': student, 
@@ -152,7 +162,6 @@ def unit_registration(request):
     })
 
 # --- 5. STAFF REPORTS ---
-
 @login_required
 @user_passes_test(is_staff)
 def exam_attendance_sheet(request, exam_id):

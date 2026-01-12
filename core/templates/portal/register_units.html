@@ -1,29 +1,59 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
-<head><title>Register Units</title><script src="https://cdn.tailwindcss.com"></script></head>
-<body class="bg-gray-100 min-h-screen p-8">
-    <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow">
-        <h1 class="text-3xl font-bold text-blue-900">Unit Registration</h1>
-        <p class="text-gray-600 mb-6">Welcome, {{ student.first_name }}. Select your units for this semester.</p>
-        
-        <form method="POST">
-            {% csrf_token %}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {% for course in all_courses %}
-                <label class="flex items-center p-4 border rounded hover:bg-blue-50 cursor-pointer">
-                    <input type="checkbox" name="courses" value="{{ course.id }}" class="w-5 h-5 text-blue-900"
-                        {% if course in student.enrolled_courses.all %}checked{% endif %}>
-                    <div class="ml-3">
-                        <span class="block font-bold text-gray-800">{{ course.code }}</span>
-                        <span class="block text-sm text-gray-500">{{ course.name }}</span>
-                    </div>
-                </label>
-                {% endfor %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Units | KCA University</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body style="background: #f4f6f9;">
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow border-0">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Select Your Units ({{ student.course_name }})</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3 form-check p-3 bg-light rounded border">
+                            <input type="checkbox" class="form-check-input" id="selectAll">
+                            <label class="form-check-label fw-bold" for="selectAll">Select All Units</label>
+                        </div>
+
+                        <div class="row">
+                            {% for course in all_courses %}
+                            <div class="col-md-6 mb-2">
+                                <div class="form-check">
+                                    <input type="checkbox" name="courses" value="{{ course.id }}" class="form-check-input unit-checkbox"
+                                        {% if course in student.enrolled_courses.all %}checked{% endif %}>
+                                    <label class="form-check-label">{{ course.code }} - {{ course.name }}</label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-success w-100 py-2">Save Units & Go to Dashboard</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <button class="mt-8 bg-green-600 text-white font-bold py-3 px-8 rounded shadow hover:bg-green-700">
-                💾 Confirm Registration
-            </button>
-        </form>
+        </div>
     </div>
+</div>
+
+<script>
+    // JavaScript for "Select All"
+    document.getElementById('selectAll').addEventListener('change', function() {
+        let checkboxes = document.querySelectorAll('.unit-checkbox');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+</script>
+
 </body>
 </html>

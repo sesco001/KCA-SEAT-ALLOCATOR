@@ -1,112 +1,134 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Exam Entry Permit - {{ assignment.student.registration_number }}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Docket | {{ student.registration_number }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
     <style>
-        body { font-family: 'Courier New', Courier, monospace; background: #eee; padding: 40px; }
+        body { background: #525659; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .docket-container { background: white; width: 100%; max-width: 850px; padding: 40px; border-radius: 4px; }
+        .header-logo { border-bottom: 3px solid #003366; padding-bottom: 15px; margin-bottom: 20px; }
         
-        .ticket {
-            max-width: 700px;
-            margin: auto; 
-            background: white;
-            border: 2px solid #003366; 
-            display: flex;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
+        /* Table Styling */
+        .table-custom { border: 1px solid #dee2e6; }
+        .table-custom th { background-color: #003366; color: white; text-transform: uppercase; font-size: 0.85rem; padding: 12px; }
+        .table-custom td { vertical-align: middle; padding: 12px; }
+        .seat-badge { background: #e3f2fd; color: #003366; font-weight: bold; padding: 5px 10px; border-radius: 4px; border: 1px solid #003366; }
         
-        /* The Blue Left Side */
-        .stub {
-            background: #003366; 
-            color: white; 
-            padding: 20px; 
-            width: 250px;
-            text-align: center; 
-            border-right: 2px dashed white;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        /* The White Right Side */
-        .main { padding: 20px; flex-grow: 1; position: relative; }
-        
-        h1 { margin: 0; font-size: 20px; color: #003366; text-transform: uppercase; margin-bottom: 5px; }
-        
-        .info { margin-top: 15px; font-size: 14px; line-height: 1.6; color: #333; }
-        
-        .big-seat { 
-            position: absolute; 
-            right: 20px; 
-            top: 10px; 
-            font-size: 60px; 
-            font-weight: bold; 
-            color: #e0e0e0; 
-            z-index: 0;
-        }
-        
-        .watermark { position: absolute; bottom: 10px; right: 20px; font-size: 10px; color: #999; }
-        
-        /* Print Button Style */
-        .btn-print {
-            background: #003366; color: white; border: none;
-            padding: 12px 24px; font-size: 16px; cursor: pointer;
-            border-radius: 5px; margin-bottom: 20px;
-        }
-        .btn-print:hover { background: #002244; }
-        
-        /* Hide button when printing */
         @media print {
-            body { background: white; padding: 0; }
-            .btn-print { display: none; }
-            .ticket { box-shadow: none; border: 2px solid black; }
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; display: block; }
+            .docket-container { max-width: 100%; box-shadow: none; padding: 0; }
         }
     </style>
 </head>
 <body>
 
-<center>
-    <button onclick="window.print()" class="btn-print">🖨️ Print Exam Slip</button>
-</center>
-
-<div class="ticket">
-    <div class="stub">
-        <h3>KCA UNIV</h3>
-        <p style="margin-top: -10px; font-size: 12px;">EXAM PERMIT</p>
-        
-        {% if qr_image %}
-            <img src="data:image/png;base64,{{ qr_image }}" width="140" style="background:white; padding: 5px; display:block; margin: 0 auto;">
-        {% else %}
-            <div style="width:140px; height:140px; background:#ddd; color:red; display:flex; align-items:center; justify-content:center; border:1px solid red;">
-                NO QR DATA
-            </div>
-        {% endif %}
-        
-        <br>
-        <small style="opacity: 0.8;">Scan to Verify</small>
-    </div>
-    
-    <div class="main">
-        <div class="big-seat">{{ assignment.seat_number }}</div>
-        
-        <div style="position: relative; z-index: 1;">
-            <h1>{{ assignment.student.first_name }} {{ assignment.student.last_name }}</h1>
-            <hr style="border: 0; border-top: 1px solid #ccc;">
-            
-            <div class="info">
-                <strong>REG NO:</strong> {{ assignment.student.registration_number }} <br>
-                <strong>COURSE:</strong> {{ assignment.exam.course.name }} <br> 
-                <strong>DATE:</strong> {{ assignment.exam.date_time|date:"D, d M Y" }} <br>
-                <strong>TIME:</strong> {{ assignment.exam.date_time|time:"H:i" }} <br>
-                <br>
-                <strong>VENUE:</strong> <span style="font-size: 18px; color: #cc0000; font-weight: bold;">{{ assignment.room.name }}</span> <br>
-                <strong>SEAT:</strong> <span style="font-size: 18px; color: #cc0000; font-weight: bold;">{{ assignment.seat_number }}</span>
+    <div class="container">
+        <div class="row justify-content-center mb-3 no-print">
+            <div class="col-md-9 text-end">
+                <a href="{% url 'home' %}" class="btn btn-secondary me-2">Back Home</a>
+                <button onclick="window.print()" class="btn btn-outline-light">Print</button>
+                <button onclick="downloadPDF()" class="btn btn-success fw-bold">Download Docket</button>
             </div>
         </div>
-        
-        <div class="watermark">OFFICIAL EXAMINATION DOCUMENT • SYSTEM GENERATED</div>
+
+        <div class="row justify-content-center">
+            <div class="col-md-9">
+                <div class="docket-container" id="examTicket">
+                    
+                    <div class="header-logo text-center">
+                        <h2 class="fw-bold text-dark m-0">KCA UNIVERSITY</h2>
+                        <p class="text-muted small mb-0">OFFICIAL EXAMINATION DOCKET</p>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-8">
+                            <table class="table table-borderless table-sm mb-0">
+                                <tr>
+                                    <td class="text-muted w-25">Student Name:</td>
+                                    <td class="fw-bold fs-5">{{ student.first_name }} {{ student.last_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Reg Number:</td>
+                                    <td class="fw-bold fs-5">{{ student.registration_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Email:</td>
+                                    <td>{{ student.email }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-4 text-center">
+                            <img src="data:image/png;base64,{{ qr_image }}" alt="QR" style="width: 100px; border: 1px solid #ddd; padding: 5px;">
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-uppercase mb-3">Allocated Units</h6>
+                    
+                    {% if assignments %}
+                        <table class="table table-bordered table-custom">
+                            <thead>
+                                <tr>
+                                    <th>Unit Code & Name</th>
+                                    <th>Date & Time</th>
+                                    <th>Venue (Hall)</th>
+                                    <th class="text-center">Seat No.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for seat in assignments %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">{{ seat.exam.course.code }}</div>
+                                        <small class="text-muted">{{ seat.exam.course.name }}</small>
+                                    </td>
+                                    <td>
+                                        {{ seat.exam.date_time|date:"d M Y" }}<br>
+                                        <small class="text-muted">{{ seat.exam.date_time|date:"h:i A" }}</small>
+                                    </td>
+                                    <td>{{ seat.room.name }}</td>
+                                    <td class="text-center">
+                                        <span class="seat-badge">{{ seat.seat_number }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <div class="alert alert-warning text-center">
+                            <strong>No seats allocated yet.</strong><br>
+                            The timetable for your registered units has not been released by the Admin.
+                        </div>
+                    {% endif %}
+
+                    <div class="mt-5 pt-3 border-top text-center text-muted small">
+                        <p class="mb-1"><strong>Instructions:</strong> Check your seat number carefully. Do not enter the exam room without this docket.</p>
+                        <p><em>Generated by KCA Seat Allocator System</em></p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
     </div>
-</div>
+
+    <script>
+        function downloadPDF() {
+            var element = document.getElementById('examTicket');
+            var opt = {
+                margin: 0.3,
+                filename: 'KCA_Docket_{{ student.registration_number|slugify }}.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+    </script>
 
 </body>
 </html>
